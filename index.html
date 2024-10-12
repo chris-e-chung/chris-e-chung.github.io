@@ -21,6 +21,21 @@
 </head>
 
 <body>
+    <script>
+        var bioEnd = 200;
+        var wineEnd = 1000;
+
+
+        $(window).on("scroll", function() {
+            if($(window).scrollTop() > 1000) {
+                $("header").addClass("active");
+            } else {
+                //remove the background property so it comes transparent again (defined in your css)
+            $("header").removeClass("active");
+            }
+        });
+    </script>
+
     <header class="flexrow">
         <div class="flexrow">
             <a href="index.html">
@@ -41,7 +56,9 @@
                     Chris C. @ Cornell
                 </h3>
             </a>
+
         </div>
+
     </header>
 
     <div class="flexrow" id="sourceCitation">
@@ -57,6 +74,10 @@
     </div>
 
     <main>
+        <section id="bioSection">
+
+        </section>
+        <section id="wineSection">
         <h2><em>unWINEd</em> : Visualizing the World's Wines</h2>
         <p>
             Wines are a familiar spirit to all adults, but do we really know what we're drinking? Does the country on
@@ -67,7 +88,6 @@
 
         <hr>
 
-        <section id="Chris">
             <h3>
                 Reviewers and Wine - Are the Tastebuds Biased?
             </h3>
@@ -390,7 +410,7 @@
                 However,
                 Michael Schachner seems to dislike French varieties, while Joe Czerwinski strongly prefers them.
             </p>
-        </section>
+            </section>
 
         <hr>
     </main>

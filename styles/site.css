@@ -73,6 +73,7 @@ header ul {
     align-items: center;
 }
 
+
 .justifyright picture {
     display: flex;
     justify-content: center;
@@ -137,6 +138,10 @@ a#kaggle:hover {
 main {
     padding: 30px calc(var(--padding) * 2);
     background-color: var(--grey);
+}
+
+section#bioSection {
+    height: 1000px;
 }
 
 svg {
