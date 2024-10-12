@@ -68,10 +68,6 @@ header ul {
     list-style: none;
 }
 
-header ul li {
-    margin-right: 30px;
-}
-
 .justifyright {
     margin-left: auto;
     align-items: center;
