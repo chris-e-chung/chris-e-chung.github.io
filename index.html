@@ -4,15 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!--
-    Importing Prof. Rz's stylesheets that he uses to present code on the HTML      
-    -->
-    <link rel="stylesheet" href="styles/default.min.css">
-    <link rel="stylesheet" href="styles/hljs-base16.css">
-
-    <script src="styles/highlight.min.js"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-
 
     <title>Chris C.</title>
 
@@ -21,424 +12,58 @@
 </head>
 
 <body>
-    <script>
-        var bioEnd = 200;
-        var wineEnd = 1000;
+    <div id="introParent">
+        <div id="introScreen" class="blur">
+            <h3>
+                I'm feeling...
+            </h3>
 
+            <div id="introButtons">
+                <button id="modernButtonParent" class="left-button-pos">
+                        Modern
+                </button>
+                <button id="oldfashionedButtonParent" class="right-button-pos">
+                        Old-Fashioned
+                </button>
 
-        $(window).on("scroll", function() {
-            if($(window).scrollTop() > 1000) {
-                $("header").addClass("active");
-            } else {
-                //remove the background property so it comes transparent again (defined in your css)
-            $("header").removeClass("active");
-            }
-        });
-    </script>
+            </div>
+        </div>
+    </div>
+
 
     <header class="flexrow">
         <div class="flexrow">
-            <a href="index.html">
-                <h1>
-                    Sample Project 1: Wines
-                </h1>
+            <a href="http://chris-e-chung.github.io/">
+                <picture id="retrotitle">
+                    <img src="images/retro/chriswebsitetitle.gif" alt="Retro Animated Title">
+                </picture>
             </a>
 
         </div>
         <div class="justifyright flexrow">
             <a href="http://chris-e-chung.github.io/">
-                <picture>
-                    <img src="images/headshot.png" alt="Chris Chung Headshot">
-                </picture>
-            </a>
-            <a href="http://chris-e-chung.github.io/">
                 <h3>
                     Chris C. @ Cornell
                 </h3>
-            </a>
-            <a href="retro.html">
-                Retro
             </a>
 
         </div>
 
     </header>
 
-    <div class="flexrow" id="sourceCitation">
-        <button>
-            <a href="https://www.kaggle.com/datasets/zynicide/wine-reviews">
-                Wine Reviews
-            </a>
-        </button>
-        <p>
-            Data sourced from <a id="zynicide" href="https://www.kaggle.com/zynicide">zynicide</a> on <a id="kaggle"
-                href="https://www.kaggle.com/">kaggle</a>
-        </p>
-    </div>
-
     <main>
-        <section id="bioSection">
 
-        </section>
-        <section id="wineSection">
-        <h2><em>unWINEd</em> : Visualizing the World's Wines</h2>
-        <p>
-            Wines are a familiar spirit to all adults, but do we really know what we're drinking? Does the country on
-            the wine bottle's label
-            matter? Can we really trust 'wine reviewers' to give us unbiased opinions? Our visualizations try to tackle
-            only some of the possible questions!
-        </p>
+        <h1>
+            hawk tuah
+        </h1>
 
-        <hr>
-
-            <h3>
-                Reviewers and Wine - Are the Tastebuds Biased?
-            </h3>
-            <p>
-                Do different reviewers prefer certain countries' wines? Do those reviewers taste a variety of countries'
-                wines, or do they
-                tend to focus on a single country?
-            </p>
-
-            <svg id="reviewerPlot" height="600" width="900"></svg>
-
-            <script id="chrisCodeScript">
-                // Increase opacity of less-reviewed wines
-                // Add a median for each reviewer to examine skew
-
-                //Things to set
-                const colors = ["green", "orange", "blue", "red", "purple"]
-                const margin = { top: 10, right: 100, bottom: 150, left: 50 };
-                const avgCircleR = 6;
-
-
-                // Standard convenient variables
-                const svg = d3.select("svg#reviewerPlot");
-                const svgImg = d3.select("svg#reviewerImgs");
-                const countryOffsetArray = [-20, 20];
-
-                const width = svg.attr("width");
-                const height = svg.attr("height");
-                const chartWidth = width - margin.left - margin.right;
-                const chartHeight = height - margin.top - margin.bottom;
-                let annotations = svg.append("g").attr("id", "annotations");
-                let chartArea = svg.append("g").attr("id", "points")
-                    .attr("transform", `translate(${margin.left},${margin.top})`);
-
-                // Constructor Function
-                const requestData = async function () {
-
-                    // Load the data
-                    var data = await d3.csv("wines.csv", d3.autoType);
-
-                    // Filter out all data points without a taster_name, or with a taster with < 4000 reviews
-                    reviewerCounts = {};
-                    data.forEach((d) => {
-                        if (!(d.taster_name in reviewerCounts)) {
-                            reviewerCounts[d.taster_name] = 1;
-                        }
-                        else {
-                            reviewerCounts[d.taster_name] = reviewerCounts[d.taster_name] + 1;
-                        }
-                    });
-                    data = data.filter((d) => { return !(d.taster_name == null || (reviewerCounts[d.taster_name] < 4000)) })
-
-                    // Let's also filter out all the wines from countries that have less than 5000 samples
-                    countryCounts = {};
-                    data.forEach((d) => {
-                        if (!(d.country in countryCounts)) {
-                            countryCounts[d.country] = 1;
-                        }
-                        else {
-                            countryCounts[d.country] = countryCounts[d.country] + 1;
-                        }
-                    });
-                    data = data.filter((d) => { return (countryCounts[d.country] > 5000) })
-
-                    // Left axis (Points)
-                    const pointsExtent = d3.extent(data, d => d["points"]);
-                    console.log(pointsExtent);
-                    const pointsScale = d3.scaleLinear().domain(pointsExtent)
-                        .range([chartHeight, 0]);
-                    let leftAxis = d3.axisLeft(pointsScale)
-                    let leftGridlines = d3.axisLeft(pointsScale)
-                        .tickSize(-chartWidth - 10)
-                        .tickFormat("")
-                        .ticks(pointsExtent[1] - pointsExtent[0]);
-                    annotations.append("g")
-                        .attr("class", "y axis")
-                        .attr("transform", `translate(${margin.left - 10},${margin.top})`)
-                        .call(leftAxis)
-                    annotations.append("g")
-                        .attr("class", "y gridlines")
-                        .attr("id", "ygridline")
-                        .attr("transform", `translate(${margin.left - 10},${margin.top})`)
-                        .call(leftGridlines);
-
-                    // Introduce a new variable and a function that increments it
-                    // and returns a string ID value.
-                    // Used to ID the gridlines, so that we can remove the lowest
-                    // and top value. Also, keep track of the lowest and highest
-                    // values using a simple array.
-                    var lineCount = -1;
-                    const lineCountExtent = [0,]
-                    function incrementLineCount() {
-                        lineCount = lineCount + 1;
-                        lineCountExtent[1] = lineCount;
-                        return ("ygridline" + lineCount);
-                    }
-
-                    // Give the gridlines an ID
-                    annotations.selectAll("g#ygridline g")
-                        .attr("id", d => incrementLineCount());
-                    // 'Remove' the bottom and top gridlines.
-                    annotations.select("g#ygridline" + lineCountExtent[0])
-                        .attr("opacity", 0);
-                    annotations.select("g#ygridline" + lineCountExtent[1])
-                        .attr("opacity", 0);
-
-                    // Bottom Axis (Reviewers)
-                    // Make an array with all of the names for the labels
-                    const labelReviewerArray = [];
-                    data.forEach((d, i) => {
-                        if (!labelReviewerArray.includes(d.taster_name)) {
-                            labelReviewerArray.push(d.taster_name)
-                        }
-                    });
-                    // Make another one without special characters
-                    const reviewerArray = [];
-                    labelReviewerArray.forEach((d) => {
-                        reviewerArray.push(d.replace(/’/g, "").replace(/\./g, "").replace(/ /g, ""))
-                    })
-
-                    const countryArray = [];
-                    data.forEach((d, i) => {
-                        if (!countryArray.includes(d.country)) {
-                            countryArray.push(d.country)
-                        }
-                    });
-
-                    // Create a scale to map ordinal categories to the x axis
-                    const reviewersScale = d3.scaleBand().domain(labelReviewerArray)
-                        .range([0, chartWidth]);
-
-                    let bottomAxis = d3.axisBottom(reviewersScale);
-                    let bottomGridlines = d3.axisBottom(reviewersScale)
-                        .tickSize(-chartHeight + 15)
-                        .tickFormat("")
-
-                    annotations.append("g")
-                        .attr("class", "x axis")
-                        .attr("transform", "translate(" + margin.left + "," + (chartHeight + margin.top + 10) + ")")
-                        .call(bottomAxis)
-                        // Anna Lee C. Iijima's name is a little long, so let's just rotate all the names...
-                        .selectAll("text")
-                        .attr("transform", "rotate(4)")
-
-                    annotations.append("g")
-                        .attr("class", "x gridlines")
-                        .attr("transform", "translate(" + margin.left + "," + (chartHeight + margin.top - 10) + ")")
-                        .call(bottomGridlines);
-
-                    // Put the image references in a dict for easier access
-                    const imgNames = {};
-                    reviewerArray.forEach((d) => {
-                        imgNames[d] = ("reviewer_portraits/hedcuts/" + d + ".png");
-                    });
-                    // Add the reviewers' portraits
-                    labelReviewerArray.forEach((d) => {
-                        annotations.append("image")
-                            .attr("width", 90)
-                            .attr("height", 75)
-                            .attr("id", d)
-                            .attr("xlink:href", imgNames[d.replace(/’/g, "").replace(/\./g, "").replace(/ /g, "")])
-                            .attr("x", (reviewersScale(d) + (reviewersScale.bandwidth() / 2) + 15))
-                            .attr("y", chartHeight + 45);
-                    });
-
-                    // Now, we work on entering the points!
-                    //
-                    // The points tend to cluster on a single pixel, so we should somewhat randomize.
-                    // I chose a normal distribution, as an equal distribution causes it to look square.
-                    // The following code was found on stackOverflow, from user Maxwell Collard.
-                    // https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve
-                    // Standard Normal variate using Box-Muller transform.
-                    function gaussianRandom(mean = 0, stdev = 3) {
-                        const u = 1 - Math.random(); // Converting [0,1) to (0,1]
-                        const v = Math.random();
-                        const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-                        // Transform to the desired mean and standard deviation:
-                        return z * stdev + mean;
-                    }
-
-                    // Calculate colors
-                    const colorScale = d3.scaleOrdinal(countryArray, colors)
-                    // Offset points according to country
-                    const pointAdjuster = d3.scaleBand()
-                        .domain(countryArray)
-                        .range(countryOffsetArray)
-
-                    // Finally, draw the circles!
-                    chartArea.selectAll("circle").data(data)
-                        .join("circle")
-                        .attr("class", d => (d.taster_name.replace(/’/g, "").replace(/\./g, "").replace(/ /g, "") + " " + d.country))
-                        .attr("r", 2)
-                        .attr("fill", d => colorScale(d.country))
-                        .attr("opacity", 0.2)
-                        // Center the circles onto the correct x-axis for the taster
-                        // Then, offset them according to their country
-                        // Add some normal randomness to prevent data-losing clumps
-                        .attr("cx", d => reviewersScale(d.taster_name) +
-                            (reviewersScale.bandwidth() / 2) +
-                            (pointAdjuster(d.country) + pointAdjuster.bandwidth() / 2) + gaussianRandom(0, 7))
-                        // Add some normal randomness to prevent data-losing clumps
-                        .attr("cy", d => pointsScale(d.points) + gaussianRandom());
-
-                    // Add the average circles
-
-                    // Input: a valid taster_name
-                    // Output: an array with [0] dict of the keys of country, containing the average point
-                    //                       [1] dict of the countries, with values of the 
-                    //                           color that the average circle's stroke should be
-                    function averagesByCountry(taster) {
-                        // Establish some variables
-                        taster = taster.replace(/’/g, "").replace(/\./g, "").replace(/ /g, "");
-                        result = [{}, {}]
-                        let tasterData = chartArea.selectAll("circle." + taster).data();
-                        let tasterCountryCounts = {};
-                        let tasterCountryTotals = {};
-
-                        // Count the number of data points for each country and add to the total
-                        tasterData.forEach((d) => {
-                            if (!(d.country in tasterCountryCounts)) {
-                                tasterCountryCounts[d.country] = 1;
-                                tasterCountryTotals[d.country] = d.points;
-                                result[1][d.country] = "black";
-                            }
-                            else {
-                                tasterCountryCounts[d.country] = tasterCountryCounts[d.country] + 1;
-                                tasterCountryTotals[d.country] = tasterCountryTotals[d.country] + d.points;
-                                if (tasterCountryCounts[d.country] > 1000) {
-                                    result[1][d.country] = "white";
-                                }
-                            }
-                        });
-
-                        // 'Iterate' through the dict to calculate the averages
-                        for (const [key, value] of Object.entries(tasterCountryCounts)) {
-                            result[0][key] = (tasterCountryTotals[key] / tasterCountryCounts[key])
-                        }
-
-                        // Return the result
-                        return result;
-                    };
-
-                    // Iterate through reviewerArray to add averages for their reviewed countries' wines.
-                    labelReviewerArray.forEach((d) => {
-                        let taster = d;
-                        avgResult = averagesByCountry(d);
-                        for (const [key, value] of Object.entries(avgResult[0])) {
-                            middleX = reviewersScale(taster) +
-                                (reviewersScale.bandwidth() / 2) +
-                                (pointAdjuster(key) + pointAdjuster.bandwidth() / 2);
-                            // I didn't end up liking adding lines
-                            // chartArea.append("line")
-                            //     .attr("x1", middleX - avgCircleR*3)
-                            //     .attr("x2", middleX + avgCircleR*3)
-                            //     .attr("y1", pointsScale(value))
-                            //     .attr("y2", pointsScale(value))
-                            //     .style("stroke-width", 2)
-                            //     .style("stroke", (avgResult[1][key]));
-                            chartArea.append("circle")
-                                .attr("id", (taster.replace(/’/g, "").replace(/\./g, "").replace(" ", "") + key + "Average"))
-                                .attr("r", avgCircleR)
-                                .attr("fill", colorScale(key))
-                                .style("stroke-width", 2)
-                                .style("stroke", (avgResult[1][key]))
-                                .attr("cx", (middleX))
-                                .attr("cy", pointsScale(value))
-                        }
-                    });
-
-                    // Add our legend
-                    const legend = svg.append("g")
-                        .attr("class", "legend")
-                        .attr("transform", `translate(${chartWidth + 80}, 40)`);
-
-                    countryArray.forEach((d, i) => {
-                        legend.append("circle")
-                            .attr("cx", 0)
-                            .attr("cy", i * 30)
-                            .attr("r", 5)
-                            .style("fill", colorScale(d));
-
-                        legend.append("text")
-                            .attr("x", 10)
-                            .attr("y", i * 30 + 5)
-                            .text(d)
-                            .style("font-size", "12px")
-                            .attr("alignment-baseline", "middle");
-                    });
-
-                    legend.append("text")
-                        .attr("x", 0)
-                        .attr("y", -20)
-                        .text("Regions")
-                        .style("font-size", "14px")
-                        .style("font-weight", "bold");
-                };
-
-                requestData();
-            </script>
-
-            <details>
-                <summary>Code:</summary>
-                <pre>
-                    <code id="chrisCodePre" class="hljs javascript language-javascript"></code>
-                </pre>
-            </details>
-
-            <p id="pCredit">
-                (Credit to <a
-                    href="https://www.wsj.com/articles/whats-in-a-hedcut-depends-how-its-made-11576537243">WSJ</a>,
-                whose hedcut model I used to create the portraits. I sourced those portraits from
-                <a href="https://www.wineenthusiast.com/">WineEnthusiast.com.</a>)
-            </p>
-
-            <p>
-                It looks like reviewers <em>certainly</em> tend to specialize in certain countries - namely,
-                we see a lot of the top reviewers of WineEnthusiast only tasting American wines. Given that
-                WineEnthusiast
-                is a site based in America, maybe this is an expectable outcome.
-            </p>
-            <p>
-                For reviewers like Roger Voss, country doesn't seem to make a large difference in his perception.
-                However,
-                Michael Schachner seems to dislike French varieties, while Joe Czerwinski strongly prefers them.
-            </p>
-            </section>
-
-        <hr>
     </main>
 
     <footer>
 
     </footer>
 
-    <script>
-        // Prof. Rz.'s method of presenting code on the HTML
-        function sanitize(s) {
-            return s.replace("<br>", "\\n")
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;")
-                .trim();
-        }
-        document.getElementById("chrisCodePre").innerHTML = sanitize(document.getElementById("chrisCodeScript").innerText);
-        hljs.highlightAll();
-    </script>
+    <script src="styles/app.js"></script>
 </body>
 
 </html>
