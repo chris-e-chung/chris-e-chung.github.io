@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wine Points by Country and Region</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 150px;
+            padding: 6px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .dot {
+            opacity: 0.7;
+        }
+
+        .legend {
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="tooltip" class="tooltip" style="display: none;"></div>
+    <svg id="chart" width="960" height="600"></svg>
+
+    <script>
+        // load the csv data file
+        d3.csv("wines.csv").then(data => {
+            // define regions for color coding
+            const regions = {
+                "Europe": ["France", "Italy", "Spain", "Portugal", "Germany", "Greece", "Hungary", "Austria", "Romania"],
+                "North America": ["US", "Canada"],
+                "South America": ["Argentina", "Chile"],
+                "Oceania": ["Australia", "New Zealand"],
+                "Middle East": ["Israel"],
+                "Africa": ["South Africa"]
+            };
+
+            // map countries to regions
+            data.forEach(d => {
+                for (const [region, countries] of Object.entries(regions)) {
+                    if (countries.includes(d.country)) {
+                        d.region = region;
+                        break;
+                    }
+                }
+            });
+
+            // prepare svg dimensions and margins
+            const svg = d3.select("#chart"),
+                margin = { top: 40, right: 200, bottom: 60, left: 60 },
+                width = +svg.attr("width") - margin.left - margin.right,
+                height = +svg.attr("height") - margin.top - margin.bottom;
+
+            const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // scales and axes
+            const x = d3.scaleLinear()
+                .domain([70, 100])
+                .range([0, width]);
+
+            const y = d3.scalePoint()
+                .domain([...new Set(data.map(d => d.country))])
+                .range([0, height])
+                .padding(0.5);
+
+            const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(Object.keys(regions));
+
+            g.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).ticks(10))
+                .selectAll("text")
+                .style("font-size", "12px");
+
+            g.append("text")
+                .attr("text-anchor", "end")
+                .attr("x", width / 2)
+                .attr("y", height + 40)
+                .text("Points")
+                .style("font-size", "14px")
+                .style("font-weight", "bold");
+
+            g.append("g")
+                .call(d3.axisLeft(y))
+                .selectAll("text")
+                .style("font-size", "12px");
+
+            // add data points (scatter plot)
+            g.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", d => x(+d.points))
+                .attr("cy", d => y(d.country))
+                .attr("r", 5)
+                .style("fill", d => colorScale(d.region))
+                .on("mouseover", (event, d) => {
+                    const tooltip = d3.select("#tooltip");
+                    tooltip.html(`Country: ${d.country}<br>Points: ${d.points}<br>Region: ${d.region}`)
+                        .style("left", (event.pageX + 5) + "px")
+                        .style("top", (event.pageY - 28) + "px")
+                        .style("display", "inline-block");
+                })
+                .on("mouseout", () => {
+                    d3.select("#tooltip").style("display", "none");
+                });
+
+            // add legend
+            const legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width + 80}, 40)`);
+
+            Object.keys(regions).forEach((region, i) => {
+                legend.append("circle")
+                    .attr("cx", 0)
+                    .attr("cy", i * 30)
+                    .attr("r", 5)
+                    .style("fill", colorScale(region));
+
+                legend.append("text")
+                    .attr("x", 10)
+                    .attr("y", i * 30 + 5)
+                    .text(region)
+                    .style("font-size", "12px")
+                    .attr("alignment-baseline", "middle");
+            });
+
+            legend.append("text")
+                .attr("x", 0)
+                .attr("y", -20)
+                .text("Regions")
+                .style("font-size", "14px")
+                .style("font-weight", "bold");
+        });
+    </script>
+
+</body>
+
+</html>

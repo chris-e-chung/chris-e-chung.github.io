@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviewer Bar Chart with Custom Color Legend</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 120px;
+            padding: 6px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        .bar {
+            fill-opacity: 0.7;
+        }
+        .legend {
+            font-size: 12px;
+        }
+        
+    </style>
+</head>
+<body>
+
+<div id="tooltip" class="tooltip" style="display: none;"></div>
+<svg id="chart" width="960" height="600"></svg> 
+
+<script>
+    d3.csv("wines.csv").then(data => {
+        const reviewsByTaster = d3.rollup(
+            data,
+            v => ({
+                reviewCount: v.length,
+                avgRating: d3.mean(v, d => d.points)
+            }),
+            d => d.taster_name
+        );
+
+ 
+        const tasterData = Array.from(reviewsByTaster, ([taster, values]) => ({
+            taster: taster || "N/A",
+            reviewCount: values.reviewCount,
+            avgRating: values.avgRating
+        }));
+
+        
+        const svg = d3.select("#chart"),
+              margin = {top: 40, right: 20, bottom: 70, left: 40},
+              width = +svg.attr("width") - margin.left - margin.right,
+              height = +svg.attr("height") - margin.top - margin.bottom;
+
+        const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3.scaleBand()
+            .domain(tasterData.map(d => d.taster))
+            .range([0, width])
+            .padding(0.1);
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(tasterData, d => d.reviewCount)])
+            .nice()
+            .range([height, 0]);
+
+        const colorScale = d3.scaleLinear()
+            .domain([d3.min(tasterData, d => d.avgRating), d3.max(tasterData, d => d.avgRating)])
+            .range(["#f2a1a1", "#8b0000"]); 
+        g.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x))
+            .selectAll("text")
+            .attr("y", 0)
+            .attr("x", 9)
+            .attr("dy", ".35em")
+            .attr("transform", "rotate(45)")
+            .style("text-anchor", "start");
+
+        g.append("g")
+            .call(d3.axisLeft(y));
+
+        g.selectAll(".bar")
+            .data(tasterData)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", d => x(d.taster))
+            .attr("y", d => y(d.reviewCount))
+            .attr("width", x.bandwidth())
+            .attr("height", d => height - y(d.reviewCount))
+            .attr("fill", d => colorScale(d.avgRating))
+            .on("mouseover", (event, d) => {
+                const tooltip = d3.select("#tooltip");
+                tooltip.html(`Reviewer: ${d.taster}<br>Reviews: ${d.reviewCount}<br>Avg Rating: ${d.avgRating.toFixed(1)}`)
+                    .style("left", (event.pageX + 5) + "px")
+                    .style("top", (event.pageY - 28) + "px")
+                    .style("display", "inline-block");
+            })
+            .on("mouseout", () => {
+                d3.select("#tooltip").style("display", "none");
+            });
+
+        const legendWidth = 20;
+        const legendHeight = 150;
+
+        const legend = svg.append("g")
+            .attr("class", "legend")
+            .attr("transform", `translate(${width + margin.right - 50},${margin.top})`);
+        const defs = svg.append("defs");
+        const linearGradient = defs.append("linearGradient")
+            .attr("id", "linear-gradient")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "0%")
+            .attr("y2", "100%");
+
+        // Define the gradient stops
+        linearGradient.append("stop")
+            .attr("offset", "0%")
+            .attr("stop-color", "#8b0000"); 
+
+        linearGradient.append("stop")
+            .attr("offset", "100%")
+            .attr("stop-color", "#f2a1a1"); 
+
+        legend.append("rect")
+            .attr("width", legendWidth)
+            .attr("height", legendHeight)
+            .style("fill", "url(#linear-gradient)");
+        const legendScale = d3.scaleLinear()
+            .domain([d3.max(tasterData, d => d.avgRating), d3.min(tasterData, d => d.avgRating)])
+            .range([0, legendHeight]);
+
+        legend.append("g")
+            .attr("transform", `translate(${legendWidth}, 0)`)
+            .call(d3.axisRight(legendScale).ticks(5).tickFormat(d => d.toFixed(1)));
+
+        legend.append("text")
+            .attr("x", 0)
+            .attr("y", -10)
+            .text("Avg Rating")
+            .style("font-size", "12px")
+            .style("font-weight", "bold");
+    });
+</script>
+
+</body>
+</html>

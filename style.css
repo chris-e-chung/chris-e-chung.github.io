@@ -1,0 +1,118 @@
+#passwordSection * {
+  font-family: monospace;
+  --neon-green: rgb(22, 245, 41);
+  color: var(--neon-green);
+}
+
+#passwordSection {
+  background-color: black;
+}
+
+div.full-container {
+  display: flex;
+  flex-direction: row;
+  height: 700px;
+}
+
+div.explanation {
+  max-width: 700px;
+  padding: 0px 20px;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+}
+.map_bars {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 75%;
+  height: 100%;
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  flex-direction: column;
+  padding-top: 50px;
+
+  flex-grow: 3;
+}
+
+.map_bars * {
+  flex-shrink: 0;
+}
+
+.details_div {
+  width: 25%;
+  height: 800px;
+  flex-grow: 1;
+  overflow-y: auto;
+
+  border: 1px solid white;
+  padding: 20px;
+  margin: 20px;
+  
+  scrollbar-color: rgb(10, 148, 21) #060607;
+  scrollbar-width: thin;
+}
+
+.details_div ul li {
+  list-style: inside;
+}
+
+.input-box {
+  border-radius: 50px;
+  border: 1px solid white;
+
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 12px;
+  width: 600px;
+}
+
+.input-box img {
+  height: 20px;
+  width: 20px;
+}
+
+.input-box input {
+  width: 90%;
+  margin-left: 10px;
+  font-size: 16px;
+  border: none;
+  outline: 0;
+  background-color: black;
+}
+
+input#filter-text-val {
+  color: var(--neon-green);
+}
+
+#legend_box {
+  fill: white;
+  stroke: white;
+}
+
+svg#progress text {
+  font-family: monospace;
+  fill: var(--neon-green)
+}
+
+text.legendTitle {
+  fill: var(--neon-green)
+}
+
+g.cell text {
+  fill: var(--neon-green)
+}
+
+rect.bar_container {
+  fill: black;
+  stroke: white;
+}
+
+rect#legend_container {
+  fill: black;
+  stroke: white;
+}

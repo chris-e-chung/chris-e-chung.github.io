@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <title>C.C. Chart</title>
+
+    <link rel="stylesheet" href="styles/site.css">
+
+</head>
+
+<body>
+    <h2>
+        Reviewers and Wine - Are the Tastebuds Biased?
+    </h2>
+    <h3>
+        Chris Chung (cc2299)
+    </h3>
+
+    <svg id="reviewerPlot" height="600" width="1100"></svg>
+
+    <ul>
+        <em>TODO:</em>
+        <li>Explanation and analysis</li>
+        <li>Legend</li>
+        <li>Remove bottom and top gridlines</li>
+        <li>Lines for each country aggregation</li>
+    </ul>
+
+    <script id="chrisCodeScript">
+        // Standard convenient variables
+        const svg = d3.select("svg#reviewerPlot");
+        const svgImg = d3.select("svg#reviewerImgs");
+
+        const width = svg.attr("width");
+        const height = svg.attr("height");
+        const margin = { top: 10, right: 100, bottom: 150, left: 50 };
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+
+        let annotations = svg.append("g").attr("id", "annotations");
+        let chartArea = svg.append("g").attr("id", "points")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Constructor Function
+        const requestData = async function () {
+
+            // Load the data
+            var data = await d3.csv("wines.csv", d3.autoType);
+
+            // Filter out all data points without a taster_name, or with a taster with < 4000 reviews
+            reviewerCounts = {};
+            data.forEach((d) => {
+                if (!(d.taster_name in reviewerCounts)) {
+                    reviewerCounts[d.taster_name] = 1;
+                }
+                else {
+                    reviewerCounts[d.taster_name] = reviewerCounts[d.taster_name] + 1;
+                }
+            });
+            data = data.filter((d) => { return !(d.taster_name == null || (reviewerCounts[d.taster_name] < 4000)) })
+
+            // Let's also filter out all the wines from countries that have less than 5000 samples
+            countryCounts = {};
+            data.forEach((d) => {
+                if (!(d.country in countryCounts)) {
+                    countryCounts[d.country] = 1;
+                }
+                else {
+                    countryCounts[d.country] = countryCounts[d.country] + 1;
+                }
+            });
+            data = data.filter((d) => { return (countryCounts[d.country] > 5000) })
+
+            // Left axis (Points)
+            const pointsExtent = d3.extent(data, d => d["points"]);
+            const pointsScale = d3.scaleLinear().domain(pointsExtent)
+                .range([chartHeight, 0]);
+            let leftAxis = d3.axisLeft(pointsScale)
+            let leftGridlines = d3.axisLeft(pointsScale)
+                .tickSize(-chartWidth - 10)
+                .tickFormat("")
+                .ticks(pointsExtent[1] - pointsExtent[0]);
+            annotations.append("g")
+                .attr("class", "y axis")
+                .attr("transform", `translate(${margin.left - 10},${margin.top})`)
+                .call(leftAxis)
+            annotations.append("g")
+                .attr("class", "y gridlines")
+                .attr("transform", `translate(${margin.left - 10},${margin.top})`)
+                .call(leftGridlines);
+
+
+            // Bottom Axis (Reviewers)
+            // Make an array with all of the names for the labels
+            const labelReviewerArray = [];
+            data.forEach((d, i) => {
+                if (!labelReviewerArray.includes(d.taster_name)) {
+                    labelReviewerArray.push(d.taster_name)
+                }
+            });
+            // Make another one without special characters
+            const reviewerArray = [];
+            labelReviewerArray.forEach((d) => {
+                reviewerArray.push(d.replace(/’/g, "").replace(/\./g, "").replace(/ /g, ""))
+            })
+
+            const countryArray = [];
+            data.forEach((d, i) => {
+                if (!countryArray.includes(d.country)) {
+                    countryArray.push(d.country)
+                }
+            });
+
+            // Create a scale to map ordinal categories to the x axis
+            const reviewersScale = d3.scaleBand().domain(labelReviewerArray)
+                .range([0, chartWidth]);
+
+            let bottomAxis = d3.axisBottom(reviewersScale);
+            let bottomGridlines = d3.axisBottom(reviewersScale)
+                .tickSize(-chartHeight + 30)
+                .tickFormat("")
+
+            annotations.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(" + margin.left + "," + (chartHeight + margin.top + 10) + ")")
+                .call(bottomAxis)
+                // Anna Lee C. Iijima's name is a little long, so let's just rotate all the names...
+                .selectAll("text")
+                .attr("transform", "rotate(4)")
+
+            annotations.append("g")
+                .attr("class", "x gridlines")
+                .attr("transform", "translate(" + margin.left + "," + (chartHeight + margin.top - 15) + ")")
+                .call(bottomGridlines);
+
+            // Put the image references in a dict for easier access
+            const imgNames = {};
+            reviewerArray.forEach((d) => {
+                imgNames[d] = ("reviewer_portraits/hedcuts/" + d + ".png");
+            });
+            // Add the reviewers' portraits
+            labelReviewerArray.forEach((d) => {
+                annotations.append("image")
+                    .attr("width", 90)
+                    .attr("height", 75)
+                    .attr("id", d)
+                    .attr("xlink:href", imgNames[d.replace(/’/g, "").replace(/\./g, "").replace(/ /g, "")])
+                    .attr("x", (reviewersScale(d) + (reviewersScale.bandwidth() / 2) + 15))
+                    .attr("y", chartHeight + 45);
+            });
+
+            // Now, we work on entering the points!
+            //
+            // The points tend to cluster on a single pixel, so we should somewhat randomize.
+            // I chose a normal distribution, as an equal distribution causes it to look square.
+            // The following code was found on stackOverflow, from user Maxwell Collard.
+            // https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve
+            // Standard Normal variate using Box-Muller transform.
+            function gaussianRandom(mean = 0, stdev = 3) {
+                const u = 1 - Math.random(); // Converting [0,1) to (0,1]
+                const v = Math.random();
+                const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+                // Transform to the desired mean and standard deviation:
+                return z * stdev + mean;
+            }
+
+            // Calculate colors (hard coded)
+            const colors = ["green", "yellow", "blue", "red", "purple"]
+            const colorScale = d3.scaleOrdinal(countryArray, colors)
+            // Offset points according to country
+            const pointAdjuster = d3.scaleBand()
+                .domain(countryArray)
+                .range([-20, 20])
+
+            // Finally, draw the circles!
+            chartArea.selectAll("circle").data(data)
+                .join("circle")
+                .attr("class", d => (d.taster_name.replace(/’/g, "").replace(/\./g, "").replace(/ /g, "") + " " + d.country))
+                .attr("r", 2)
+                .attr("fill", d => colorScale(d.country))
+                .attr("opacity", 0.2)
+                .attr("cx", d => reviewersScale(d.taster_name) +
+                    (reviewersScale.bandwidth() / 2) +
+                    (pointAdjuster(d.country) + pointAdjuster.bandwidth() / 2) + gaussianRandom(0, 7))
+                .attr("cy", d => pointsScale(d.points) + gaussianRandom());
+
+
+            // Input: a valid taster_name
+            // Output: a dict with keys of country, containing the average point
+            function averagesByCountry(taster) {
+                // Establish some variables
+                taster = taster.replace(/’/g, "").replace(/\./g, "").replace(/ /g, "");
+                let result = {};
+                let tasterData = chartArea.selectAll("circle." + taster).data();
+                let tasterCountryCounts = {};
+                let tasterCountryTotals = {};
+
+                // Count the number of data points for each country and add to the total
+                tasterData.forEach((d) => {
+                    if (!(d.country in tasterCountryCounts)) {
+                        tasterCountryCounts[d.country] = 1;
+                        tasterCountryTotals[d.country] = d.points;
+                    }
+                    else {
+                        tasterCountryCounts[d.country] = tasterCountryCounts[d.country] + 1;
+                        tasterCountryTotals[d.country] = tasterCountryTotals[d.country] + d.points;
+                    }
+                });
+
+                // 'Iterate' through the dict to calculate the averages
+                for (const [key, value] of Object.entries(tasterCountryCounts)) {
+                    result[key] = (tasterCountryTotals[key] / tasterCountryCounts[key])
+                }
+
+                // Return the result
+                return result;
+            };
+
+            // Iterate through reviewerArray to add averages for their reviewed countries' wines.
+            labelReviewerArray.forEach((d) => {
+                let taster = d;
+                for (const [key, value] of Object.entries(averagesByCountry(d))) {
+                    chartArea.append("circle")
+                        .attr("id", (taster.replace(/’/g, "").replace(/\./g, "").replace(" ", "") + key + "Average"))
+                        .attr("r", 5)
+                        .attr("fill", colorScale(key))
+                        .style("stroke-width", 2)
+                        .style("stroke", "black")
+                        .attr("cx", (reviewersScale(taster) +
+                            (reviewersScale.bandwidth() / 2) +
+                            (pointAdjuster(key) + pointAdjuster.bandwidth() / 2)))
+                        .attr("cy", pointsScale(value))
+                }
+            })
+
+            // add legend
+            const legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${chartWidth + 80}, 40)`);
+
+            countryArray.forEach((d, i) => {
+                legend.append("circle")
+                    .attr("cx", 0)
+                    .attr("cy", i * 30)
+                    .attr("r", 5)
+                    .style("fill", colorScale(d));
+
+                legend.append("text")
+                    .attr("x", 10)
+                    .attr("y", i * 30 + 5)
+                    .text(d)
+                    .style("font-size", "12px")
+                    .attr("alignment-baseline", "middle");
+            });
+
+            legend.append("text")
+                .attr("x", 0)
+                .attr("y", -20)
+                .text("Regions")
+                .style("font-size", "14px")
+                .style("font-weight", "bold");
+        };
+
+        requestData();
+    </script>
+</body>
+
+</html>

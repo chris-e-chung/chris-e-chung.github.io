@@ -1,0 +1,282 @@
+<<<<<<< HEAD <html>
+
+  <head>
+    =======
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+      <title>Wines by Country</title>
+
+      >>>>>>> 334fd84ab5a7630b3ac688014fc453ddb84ae3cc
+      <style>
+        .gridlines line {
+          stroke: #bbb;
+        }
+
+        .gridlines .domain {
+          stroke: none;
+        }
+      </style>
+    </head>
+
+  <body>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <h3> 150,000 Wines by Country</h3>
+    <p id="Leo">
+      Which country has the best wines? And how expensive are they compared to each other?<br>
+      This graph depicts the relationship between country, price, and reviewer score. <br><br>
+      Unexpectedly, the US produces the most wine varieties, 62397! Their price seems to matter little to the score.
+      <br>
+      Looking for the most value out of your money? French wines seem to grow in score along with their price. <br>
+      Average wine prices from each country never exceed $100, and Austrian wine appears to be best on average.
+      <svg id="p1s" width="1400" height="700"></svg>
+      <script>
+        let l_width = 1000
+        let l_height = 600
+
+        const l_margins = {
+          top: 50, right: 50, bottom: 50, left: 150
+        };
+
+        const l_chartWidth = l_width - l_margins.left - l_margins.right;
+        const l_chartHeight = l_height - l_margins.top - l_margins.bottom;
+
+        d3.csv('wines.csv').then((data) => {
+
+          //--------------(pre-processing)
+          let l_svg = d3.select("#p1s");
+          let l_annotations = l_svg.append("g").attr("id", "annotations");
+          let l_chartArea = l_svg.append('g')
+            .attr('transform', `translate(${l_margins.left},${l_margins.top})`);
+
+          const set = new Set([])
+          const nmap = new Map([])
+          const smap = new Map([])
+          const pmap = new Map([])
+          data.forEach((d, i) => {
+            d['points'] = Number(d['points']);
+            d['price'] = Number(d['price'].replace(/\$/g, ''));
+            set.add(d['country'])
+            nmap.set(d['country'], (nmap.get(d['country']) ?? 0) + 1)
+            smap.set(d['country'], (smap.get(d['country']) ?? 0) + d['points'])
+            pmap.set(d['country'], (pmap.get(d['country']) ?? 0) + d['price'])
+          });
+
+          const rmv = []
+          set.forEach((d, i) => {
+            if (nmap.get(d) < 100) {
+              rmv.push(d)
+              set.delete(d)
+            }
+            smap.set(d, smap.get(d) / nmap.get(d))
+            pmap.set(d, pmap.get(d) / nmap.get(d))
+          })
+
+          data = data.filter((d) => {
+            return !rmv.includes(d["country"])
+          });
+
+          (nmap.keys()).forEach((d, i) => {
+            if (rmv.includes(d))
+              nmap.delete(d);
+          });
+
+          const XR = d3.extent(data, d => d['points']);
+          const YR = d3.extent(data, d => d['price']);
+
+          let l_xScale = d3.scaleLinear().domain(XR)
+            .range([0, l_chartWidth - 30])
+
+          let l_yScale = d3.scalePoint().domain(set)
+            .range([l_chartHeight - 20, 0])
+
+          let l_ryScale = d3.scalePoint().domain(nmap.values())
+            .range([l_chartHeight - 20, 0])
+
+          let l_sizeScale = d3.scaleSqrt().domain(YR).range([0, 25])
+
+          let l_stateScale = d3.scaleOrdinal(d3.schemeTableau10)
+
+          //---------------(chart part)
+
+          let l_leftAxis = d3.axisLeft(l_yScale);
+          let l_rightAxis = d3.axisRight(l_ryScale);
+
+          l_svg.append('g')
+            .style("font", "13px verdana,sans-serif")
+            .attr('class', 'y axis')
+            .attr('transform', `translate(${l_margins.left - 10},${l_margins.top})`)
+            .call(l_leftAxis)
+
+          l_svg.append('g')
+            .style("font", "13px verdana,sans-serif")
+            .attr('class', 'y axis')
+            .attr('transform', `translate(${l_chartWidth + l_margins.left},${l_margins.top})`)
+            .call(l_rightAxis)
+
+          let l_bottomAxis = d3.axisBottom(l_xScale)
+
+          l_svg.append('g')
+            .style("font", "13px verdana,sans-serif")
+            .attr('class', 'y axis')
+            .attr('transform', `translate(${l_margins.left},${l_chartHeight + l_margins.top + 10})`)
+
+            .call(l_bottomAxis);
+
+
+          let l_leftGridlines = d3.axisLeft(l_yScale)
+            .tickSize(-l_chartWidth - 10)
+            .tickFormat('');
+
+          l_svg.append('g')
+            .attr('class', 'y gridlines')
+            .attr('transform', `translate(${l_margins.left - 10},${l_margins.top})`)
+            .call(l_leftGridlines);
+
+          let l_bottomGridlines = d3.axisBottom(l_xScale)
+            .tickSize(-l_chartHeight - 10)
+            .tickFormat('')
+            .ticks(6);
+
+          l_svg.append('g')
+            .attr('class', 'x gridlines')
+            .attr('transform', `translate(${l_margins.left},${l_chartHeight + l_margins.top + 10})`)
+            .call(l_bottomGridlines);
+
+          let l_circles = l_chartArea.selectAll("circle").data(data)
+            .join("circle")
+            .attr("cx", d => l_xScale(d['points']))
+            .attr("cy", d => l_yScale(d['country']))
+            .attr("r", d => l_sizeScale(d['price']))
+            .style("fill", d => l_stateScale(d['country']))
+            .attr("opacity", 0.25);
+
+          let lines = l_chartArea.selectAll("circles").data(set)
+            .join("line")
+            .attr("x1", d => l_xScale((smap.get(d))))
+            .attr("x2", d => l_xScale((smap.get(d))))
+            .attr("y1", d => l_yScale(d) + 10)
+            .attr("y2", d => l_yScale(d) - 10)
+            .style("stroke", "black")
+            .attr("stroke-width", 3)
+            .attr("opacity", 1)
+
+          let avgs = l_chartArea.selectAll("circles").data(set)
+            .join("circle")
+            .attr("cx", d => l_xScale((smap.get(d))))
+            .attr("cy", d => l_yScale(d))
+            .attr("r", d => l_sizeScale(pmap.get(d)))
+            .style("fill", "white")
+            .style("stroke", "black")
+            .attr("stroke-width", 2)
+            .attr("opacity", 1);
+
+          //---------------- (legend stuff)
+
+          l_svg.append("text")
+            .attr('id', 'label')
+            .text("Score (Out of 100)")
+            .attr('font-size', '25')
+            .attr('x', '440')
+            .attr('y', '615')
+            .style('font-weight', 'bold')
+            .style('font-family', 'garamond,serif')
+            .style('text-shadow', '-1px 0 white, 0 1px white, 1px 0 white, 0 -1px white')
+
+
+          let l_circX = '1050'
+          let l_textX = '1110'
+          l_svg.append("circle")
+            .attr("cx", l_circX)
+            .attr("cy", "115")
+            .attr("r", d => l_sizeScale(2000))
+            .style("fill", "black")
+
+          l_svg.append("text")
+            .text("$2000")
+            .attr('font-size', '15')
+            .attr('x', l_textX)
+            .attr('y', '115')
+            .style('font-weight', 'bold')
+            .style('font-family', 'garamond,serif')
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+
+          l_svg.append("circle")
+            .attr("cx", l_circX)
+            .attr("cy", "165")
+            .attr("r", d => l_sizeScale(1000))
+            .style("fill", "black")
+
+          l_svg.append("text")
+            .text("$1000")
+            .attr('font-size', '15')
+            .attr('x', l_textX)
+            .attr('y', '165')
+            .style('font-weight', 'bold')
+            .style('font-family', 'garamond,serif')
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+
+          l_svg.append("circle")
+            .attr("cx", l_circX)
+            .attr("cy", "200")
+            .attr("r", d => l_sizeScale(100))
+            .style("fill", "black")
+
+          l_svg.append("text")
+            .text("$100")
+            .attr('font-size', '15')
+            .attr('x', l_textX)
+            .attr('y', '200')
+            .style('font-weight', 'bold')
+            .style('font-family', 'garamond,serif')
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+
+          l_svg.append("circle")
+            .attr("cx", l_circX)
+            .attr("cy", "225")
+            .attr("r", d => l_sizeScale(10))
+            .style("fill", "black")
+
+          l_svg.append("text")
+            .text("$10")
+            .attr('font-size', '15')
+            .attr('x', l_textX)
+            .attr('y', '225')
+            .style('font-weight', 'bold')
+            .style('font-family', 'garamond,serif')
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+
+
+          l_svg.append("circle")
+            .attr("cx", l_circX)
+            .attr("cy", "65")
+            .attr("r", d => l_sizeScale(50))
+            .style("fill", "white")
+            .style("stroke", "black")
+            .attr("stroke-width", 2)
+
+          l_svg.append("text")
+            .text("Avg. Score & Price")
+            .attr('font-size', '15')
+            .attr('x', "1130")
+            .attr('y', '65')
+            .style('font-weight', 'bold')
+            .style('font-family', 'garamond,serif')
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+
+          l_chartArea.raise();
+
+
+        })
+      </script>
+    </p>
+
+  </body>
+
+  </html>
